@@ -32,7 +32,6 @@ def getProjectIssues(project):
     response = requests.request("GET", url, headers=headers, auth=auth, params=query)
     response = response.json()
     all_issues = []
-    print(response)
     #print(f"Total issues: {len(all_issues)}")
     # Optional: pretty print
     # print(json.dumps(all_issues, indent=4))
@@ -45,10 +44,47 @@ def getProjectIssues(project):
             url=url
         )
         all_issues.append(resp.json())
+        print(json.dumps(resp.json(), sort_keys=True, indent=4, separators=(",", ": ")))
     return all_issues
     return response.json()  # json.loads(response.text)
 def createJiraTickets(command):
-    pass
+    global baseurl, auth, headers
+    for cmd in command:
+        cmd = cmd['fields']
+        payload = json.dumps(
+            {
+            "fields": {
+                "description": {
+                    "content": [
+                        {
+                        "content": [
+                            {
+                            "text": cmd['description'],
+                            "type": "text"
+                            }
+                        ],
+                        "type": "paragraph"
+                        }
+                    ],
+                    "type": "doc",
+                    "version": 1
+                    },
+                    "duedate": cmd['duedate'],
+                    "project": {
+                        "key": cmd['project']['key']
+                    },
+                    "issuetype":{
+                        "name": cmd['issuetype']['name']
+                    },
+                    "summary": cmd['summary']
+                }
+            }
+        )
+        print(payload)
+        url = f"{baseurl}/rest/api/3/issue"
+        response = requests.request("POST", url, data=payload, headers=headers, auth=auth)
+        print(response.text)
+
 
 def issuePicker(issue):
     global headers, baseurl, auth
@@ -60,6 +96,18 @@ def issuePicker(issue):
         auth=auth
     )
     print(response.status_code)
+
+def getAllIssueTypes():
+    global headers, baseurl,auth
+    url = f"{baseurl}/rest/api/3/issuetype"
+
+    response = requests.request(
+        "GET",
+        url,
+        headers=headers,
+        auth=auth
+    )
+    print(json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(",", ": ")))
 
 if __name__ == "__main__":
     if ".env" not in os.listdir():
@@ -77,8 +125,9 @@ if __name__ == "__main__":
     }
     with open('command.json', 'r') as file:
         command = json.load(file)
-    print(command)
-    #createJiraTickets(command)
+    createJiraTickets(command)
+    #getallProject()
+    #getAllIssueTypes()
 
 
     
